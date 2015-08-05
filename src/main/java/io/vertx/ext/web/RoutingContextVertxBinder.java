@@ -211,7 +211,7 @@ import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
  * @author <a href="mailto:stephane.bastian.dev@gmail.com">Stephane Bastian</a>
  *
  */
-public class RoutingContextVertBinder extends BaseBinder<RoutingContext> {
+public class RoutingContextVertxBinder extends BaseBinder<RoutingContext> {
 
 	@Override
 	public RoutingContext bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
