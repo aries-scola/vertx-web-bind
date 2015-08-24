@@ -260,11 +260,13 @@ public class BindersImpl implements Binders {
 	}
 
 	private <T> Binder<T> getFallbackBinder(Type type) {
-		Binder<T> result = null;
 		for (Class<Binder<?>> binderFallback: binderFallbacks) {
-			result = newBinder(binderFallback, type);
+			Binder<T> binder = newBinder(binderFallback, type);
+			if (binder!=null) {
+				return binder;
+			}
 		}
-		return result;
+		return null;
 	}
 
 	private String getBinderClassName(Type type) {
