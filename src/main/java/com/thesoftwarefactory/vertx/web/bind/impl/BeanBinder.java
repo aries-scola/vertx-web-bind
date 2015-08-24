@@ -203,13 +203,18 @@
  */
 package com.thesoftwarefactory.vertx.web.bind.impl;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.thesoftwarefactory.reflection.type.Types;
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
+import java.lang.reflect.Type;
+import java.util.Objects;
 
-import io.vertx.core.MultiMap;
-import io.vertx.core.http.HttpMethod;
+import com.thesoftwarefactory.reflection.BeanInspector;
+import com.thesoftwarefactory.reflection.Pojo;
+import com.thesoftwarefactory.reflection.Property;
+import com.thesoftwarefactory.reflection.type.Types;
+import com.thesoftwarefactory.vertx.web.bind.Binder;
+import com.thesoftwarefactory.vertx.web.bind.Binders;
+import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
+import com.thesoftwarefactory.vertx.web.bind.BindingInfo.DefaultValueType;
+
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -219,35 +224,61 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class BeanBinder extends BaseBinder<Object> {
 
-	private final static String JSON = ".json";  
+	private Type type;
+	private Pojo pojo;
 	
-	private MultimapToJson mapToJson;
-	private ObjectMapper objectMaper;
-	
-	public BeanBinder() {
-		mapToJson = new MultimapToJson();
-		objectMaper = new ObjectMapper().enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+	public BeanBinder(Type type) {
+		Objects.requireNonNull(type);
+		
+		this.type = type;
 	}
 	
 	/*
 	 * (non-Javadoc)
 	 * @see com.thesoftwarefactory.vertx.mvc.bindings.BaseDataBinder#bind(java.lang.Object, java.lang.reflect.Type, java.lang.String)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public Object bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		String json = context.get(BeanBinder.class + JSON);
-		if (json==null) {
-			MultiMap map = context.request().method()==HttpMethod.POST ? context.request().formAttributes() : context.request().params();
-			json = mapToJson.toJson(map);
-			context.put(BeanBinder.class + JSON, json);
-		}
-		try {
-			return objectMaper.readValue(json, Types.toClass(bindingInfo.type()));
-		} 
-		catch (Exception e) {
-		}
-		return null;
+		return bindFromContext(bindingInfo, context, type, getPojo());
 	}
 	
+	private Pojo getPojo() {
+		if (pojo==null) {
+			pojo = BeanInspector.commonInspector().getBean(type);
+		}
+		return pojo;
+	}
+	
+	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type) {
+		return bindFromContext(bindingInfo, context, type, BeanInspector.commonInspector().getBean(type));
+	}
+
+	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
+		Object result = Types.newInstance(type);
+		if (result!=null) {
+			int numberOfPropertySet = 0;
+			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
+			for (Property property: pojo.getProperties()) {
+				tmpBindingInfo.name(property.getName());
+				if (BinderHelper.getValue(tmpBindingInfo, context)!=null) {
+					try {
+						Binder<?> propertyBinder = Binders.instance.getBinderByType(property.getType());
+						Object propertyValue = propertyBinder.bindFromContext(tmpBindingInfo, context);
+						property.setValue(result, propertyValue);
+						if (propertyValue!=null) {
+							numberOfPropertySet++;
+						}
+					}
+					catch (Throwable t) {
+					// ignore for now
+					}
+				}
+			}
+			if (numberOfPropertySet==0 && bindingInfo.defaultValueType()!=DefaultValueType.NEW) {
+				result = null;
+			}
+		}
+		return result;
+	}
+
 }
