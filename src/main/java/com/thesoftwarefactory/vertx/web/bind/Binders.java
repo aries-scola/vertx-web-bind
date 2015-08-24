@@ -213,8 +213,8 @@ public interface Binders {
 
 	public <T> Binder<T> getBinderByType(Type type);
 
-	public <T> Binder<T> getBinderByName(String name);
-
 	public Binders register(Type type, Binder<?> binder);
-	
+
+	public Binders registerFallback(Class<Binder<?>> binderClass);
+
 }

@@ -208,8 +208,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -225,29 +228,25 @@ public class BindersImpl implements Binders {
 	
 	@SuppressWarnings("rawtypes")
 	private Map<Type, Binder> binders;
+	private Collection<Class<Binder<?>>> binderFallbacks;
 	
 	public BindersImpl() {
 		binders = new HashMap<>();
+		binderFallbacks = new HashSet<>();
 	}
 	
-	@Override
-	public synchronized <T> Binder<T> getBinderByName(String className) {
-		try {
-			return getBinderByType(Class.forName(className));
-		}
-		catch (Throwable  t) {
-			logger.log(Level.INFO, "Could not find binder " + className, t);
-		}
-		return null;
-	}
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized <T> Binder<T> getBinderByType(Type type) {
+		// is there a binder already registered for thi stype?
 		Binder<T> result = binders.get(type);
 		if (result==null) {
-			String binderClassName = getBinderClassName(type);
-			result = newBinder(binderClassName, type);
+			// get a binder by naming convention 
+			result = getBinderByNamingConvention(type);
+			if (result==null) {
+			// get a binder using fallbacks if any
+				result = getFallbackBinder(type);
+			}
 			if (result!=null) {
 				binders.put(type, result);
 			}
@@ -255,6 +254,19 @@ public class BindersImpl implements Binders {
 		return result;
 	}
 	
+	private <T> Binder<T> getBinderByNamingConvention(Type type) {
+		String binderClassName = getBinderClassName(type);
+		return newBinder(binderClassName, type);
+	}
+
+	private <T> Binder<T> getFallbackBinder(Type type) {
+		Binder<T> result = null;
+		for (Class<Binder<?>> binderFallback: binderFallbacks) {
+			result = newBinder(binderFallback, type);
+		}
+		return result;
+	}
+
 	private String getBinderClassName(Type type) {
 		if (type instanceof Class) {
 			Class<?> cls = (Class<?>) type;
@@ -319,21 +331,32 @@ public class BindersImpl implements Binders {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> Binder<T> newBinder(String className, Type type) {		
+	private <T> Binder<T> newBinder(Class<Binder<?>> binderClass, Type type) {		
 		try {
 			// first try to instantiate a binder with a no-arg constructor
-			Class<?> cls = Class.forName(className);
-			return (Binder<T>) cls.newInstance();
+			return (Binder<T>) binderClass.newInstance();
 		}
 		catch (Throwable t1) {
 			try {
 				// now lets try to instantiate a binder that takes Type in its constructor
-				Class<?> cls = Class.forName(className);
-				return (Binder<T>) cls.getDeclaredConstructor(Type.class).newInstance(type);
+				return (Binder<T>) binderClass.getDeclaredConstructor(Type.class).newInstance(type);
 			}
 			catch (Throwable t2) {
-				logger.log(Level.INFO, "Could not instantiate binder " + className, t2);
+				logger.log(Level.INFO, "Could not instantiate binder " + binderClass.getName(), t2);
 			}
+		}
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> Binder<T> newBinder(String className, Type type) {
+		try {
+			// get the binder class
+			Class<Binder<?>> cls = (Class<Binder<?>>) Class.forName(className);
+			return newBinder(cls, type);
+		}
+		catch (Throwable t) {
+			logger.log(Level.INFO, "Could not instantiate binder class " + className, t);
 		}
 		return null;
 	}
@@ -343,5 +366,13 @@ public class BindersImpl implements Binders {
 		binders.put(type, binder);
 		return this;
 	}
-	
+
+	@Override
+	public Binders registerFallback(Class<Binder<?>> binderClass) {
+		Objects.requireNonNull(binderClass);
+		
+		binderFallbacks.add(binderClass);
+		return this;
+	}
+
 }
