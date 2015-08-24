@@ -203,16 +203,6 @@
  */
 package _java.lang;
 
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
-
-import io.vertx.ext.web.RoutingContext;
-
 public class booleanVertxBinder extends BooleanVertxBinder {
-
-	@Override
-	public Boolean bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		Boolean result = super.bindFromContext(bindingInfo, context);
-		return result!=null ? result : false;
-	}
 
 }

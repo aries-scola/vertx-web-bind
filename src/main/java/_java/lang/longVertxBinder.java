@@ -203,16 +203,6 @@
  */
 package _java.lang;
 
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
-
-import io.vertx.ext.web.RoutingContext;
-
 public class longVertxBinder extends LongVertxBinder {
-
-	@Override
-	public Long bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		Long result = super.bindFromContext(bindingInfo, context);
-		return result!=null ? result : 0;
-	}
 
 }

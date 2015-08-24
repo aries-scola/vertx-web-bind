@@ -203,16 +203,6 @@
  */
 package _java.lang;
 
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
-
-import io.vertx.ext.web.RoutingContext;
-
 public class shortVertxBinder extends ShortVertxBinder {
-
-	@Override
-	public Short bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		Short result = super.bindFromContext(bindingInfo, context);
-		return result!=null ? result : 0;
-	}
 
 }

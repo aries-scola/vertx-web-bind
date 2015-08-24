@@ -201,25 +201,28 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package _java.lang;
+package com.thesoftwarefactory.vertx.web.bind;
 
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
-import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
-import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-import io.vertx.ext.web.RoutingContext;
+import org.junit.Test;
 
-public class ShortVertxBinder extends BaseBinder<Short> {
+import com.thesoftwarefactory.vertx.web.bind.impl.BindingInfoImpl;
 
-	@Override
-	public Short bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		String tmp = BinderHelper.getValue(bindingInfo, context);
-		try {
-			return tmp!=null ? Short.parseShort(tmp) : null;
-		}
-		catch (Exception e) {
-			return null;
-		}
+import binders.BaseTestBinder;
+
+public class TestBeanBinder extends BaseTestBinder {
+
+	@Test
+	public void test() throws Exception {
+		Map<String, Collection<String>> params = new HashMap<>();
+		params.put("myInt", Arrays.asList("1"));
+		MyBean expectedResult = new MyBean();
+		expectedResult.setMyInt(1);
+		assertAll(MyBean.class, new BindingInfoImpl(""), params, new Object[] {expectedResult});
 	}
-
+	
 }

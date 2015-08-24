@@ -205,6 +205,7 @@ package _java.lang;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
+import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -212,7 +213,7 @@ public class CharacterVertxBinder extends BaseBinder<Character> {
 
 	@Override
 	public Character bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		String tmp = getValue(bindingInfo, context);
+		String tmp = BinderHelper.getValue(bindingInfo, context);
 		try {
 			return tmp!=null && tmp.length()==1 ? Character.valueOf(tmp.charAt(0)) : null;
 		}

@@ -205,6 +205,7 @@ package _java.lang;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
+import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -212,7 +213,7 @@ public class BooleanVertxBinder extends BaseBinder<Boolean> {
 
 	@Override
 	public Boolean bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		String tmp = getValue(bindingInfo, context);
+		String tmp = BinderHelper.getValue(bindingInfo, context);
 		try {
 			return tmp!=null ? Boolean.parseBoolean(tmp) : null;
 		}

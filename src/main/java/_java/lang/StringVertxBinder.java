@@ -205,6 +205,7 @@ package _java.lang;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
+import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -212,7 +213,7 @@ public class StringVertxBinder extends BaseBinder<String> {
 
 	@Override
 	public String bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		return getValue(bindingInfo, context);
+		return BinderHelper.getValue(bindingInfo, context);
 	}
 
 }

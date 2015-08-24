@@ -204,8 +204,12 @@
 package binders;
 
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import com.thesoftwarefactory.vertx.web.bind.Binder;
 import com.thesoftwarefactory.vertx.web.bind.Binders;
@@ -244,32 +248,49 @@ public abstract class BaseTestBinder extends WebTestBase {
 		}
 	}
 
-	protected void assertAll(Type binderType, String[] values, Object... expectedResults) throws Exception {
-		// assert that the value matches the expected value. explicitly set the default value to null
-		assertBinder(false, binderType, values, null, expectedResults);
-		// assert that the default value match value. explicitly set the default value to null
-		assertBinder(false, binderType, new String[] {"__fakeValue__"}, values[0], expectedResults);
+	@Override
+	public void setUp() throws Exception {
+		// TODO Auto-generated method stub
+		super.setUp();
+	}
 
-		// assert that the value matches the expected value. explicitly set the default value to null
-		assertBinder(true, binderType, values, null, expectedResults);
-		// assert that the default value match value. explicitly set the default value to null
-		assertBinder(true, binderType, new String[] {"__fakeValue__"}, values[0], expectedResults);
-}
+	protected void assertAll(Type binderType, String[] values, Object... expectedResults) throws Exception {
+		Map<String, Collection<String>> mapValues = new HashMap<>();
+		mapValues.put("param1", Arrays.asList(values));
+		assertAll(binderType, new BindingInfoImpl("param1"), mapValues, expectedResults);
+	}
 
 	protected void assertAll(Type binderType, String value, Object... expectedResults) throws Exception {
 		assertAll(binderType, new String[] {value}, expectedResults);
 	}
+
+	protected void assertAll(Type binderType, BindingInfo bindingInfo, Map<String, Collection<String>> values, Object[] expectedResults) throws Exception {
+		// assert that the value matches the expected value. explicitly set the default value to null
+		assertBinder(false, binderType, bindingInfo, values, expectedResults);
+		// assert that the default value match value. explicitly set the default value to null
+//		assertBinder(false, binderType, bindingInfo, Collections.emptyMap(), expectedResults);
+		// assert that the value matches the expected value. explicitly set the default value to null
+		assertBinder(true, binderType, bindingInfo, values, expectedResults);
+		// assert that the default value match value. explicitly set the default value to null
+//		assertBinder(true, binderType, bindingInfo, Collections.emptyMap(), expectedResults);
+	}
 	
-	protected void assertBinder(boolean isPost, Type binderType, String[] values, String defaultValue, Object[] expectedResults) throws Exception {
+	protected void assertBinder(boolean isPost, Type binderType, BindingInfo bindingInfo, Map<String, Collection<String>> values, Object[] expectedResults) throws Exception {
+		router.clear();
 		router.route().handler(context -> {
 			if (isPost) {
 				context.request().setExpectMultipart(true);
+				for (Map.Entry<String, Collection<String>> entry: values.entrySet()) {
+					context.request().formAttributes().add(entry.getKey(), entry.getValue());
+				}
 			}
-			BindingInfo bindingInfo = new BindingInfoImpl("param1");
-			for (String value: values) {
-				context.request().params().add("param1", value);
+			else {
+				for (Map.Entry<String, Collection<String>> entry: values.entrySet()) {
+					context.request().params().add(entry.getKey(), entry.getValue());
+				}
 			}
 			Binder<?> binder = Binders.instance.getBinderByType(binderType);
+			assertTrue(binder!=null);
 			Object result = binder.bindFromContext(bindingInfo, context);
 			if (bindingInfo.defaultValueType()==DefaultValueType.VALUE) {
 				assertTrue(result!=null);
@@ -290,38 +311,14 @@ public abstract class BaseTestBinder extends WebTestBase {
 				}
 			}
 			context.response().end();
+			testComplete();
 		});
 		if (isPost) {
-			testRequest(HttpMethod.POST, "/fake", rc -> {rc.putHeader("content-type", "application/x-www-form-urlencoded");}, null, 200, "OK", null);
+			testRequest(HttpMethod.POST, "/fake",  rc -> {rc.putHeader("content-type", "application/x-www-form-urlencoded");}, null, 200, "OK", null);
 		}
 		else {
 			testRequest(HttpMethod.GET, "/fake" , 200, "OK");
 		}
 	}
 
-	/*
-	@Test
-	public void testBinder() throws Exception {
-		router.route().handler(rc -> { 
-			doTestBinder(rc);
-			rc.response().end();
-		});
-		testRequest(HttpMethod.GET, "/fake" , 200, "OK");
-	}
-
-	@Test
-	public void testBinderPost() throws Exception {
-//		router.post().handler(BodyHandler.create()); 
-		router.post().handler(rc -> {
-			rc.request().setExpectMultipart(true);
-			doTestBinderPost(rc);
-			rc.response().end();
-		});
-		testRequest(HttpMethod.POST, "/fake", rc -> {rc.putHeader("content-type", "application/x-www-form-urlencoded");}, null, 200, "OK", null);
-	}
-
-	protected abstract void doTestBinder(RoutingContext context);
-
-	protected abstract void doTestBinderPost(RoutingContext context);
-*/
 }

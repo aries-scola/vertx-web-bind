@@ -208,6 +208,7 @@ import java.time.Instant;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
+import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
 
 import _java.time.InstantVertxBinder;
 import io.vertx.ext.web.RoutingContext;
@@ -216,7 +217,7 @@ public class DateVertxBinder extends BaseBinder<Date> {
 
 	@Override
 	public Date bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		Instant instant = InstantVertxBinder.parseInstant(getValue(bindingInfo, context), bindingInfo, context);
+		Instant instant = InstantVertxBinder.parseInstant(BinderHelper.getValue(bindingInfo, context), bindingInfo, context);
 		return instant!=null ? new Date(instant.toEpochMilli()) : null;
 	}
 

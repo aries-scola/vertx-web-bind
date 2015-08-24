@@ -216,8 +216,11 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.thesoftwarefactory.reflection.type.Types;
 import com.thesoftwarefactory.vertx.web.bind.Binder;
 import com.thesoftwarefactory.vertx.web.bind.Binders;
+
+import _java.util.ArrayVertxBinder;
 
 public class BindersImpl implements Binders {
 	private final static String BINDER_PREFIX = "";
@@ -228,24 +231,31 @@ public class BindersImpl implements Binders {
 	
 	@SuppressWarnings("rawtypes")
 	private Map<Type, Binder> binders;
-	private Collection<Class<Binder<?>>> binderFallbacks;
+	private Collection<Class<? extends Binder<?>>> binderFallbacks;
 	
 	public BindersImpl() {
 		binders = new HashMap<>();
 		binderFallbacks = new HashSet<>();
+		registerFallback(BeanBinder.class);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized <T> Binder<T> getBinderByType(Type type) {
-		// is there a binder already registered for thi stype?
+		// is there a binder already registered for this type?
 		Binder<T> result = binders.get(type);
 		if (result==null) {
 			// get a binder by naming convention 
 			result = getBinderByNamingConvention(type);
 			if (result==null) {
-			// get a binder using fallbacks if any
-				result = getFallbackBinder(type);
+				if (Types.isArray(type)) {
+				// return the array binder
+					result = (Binder<T>) new ArrayVertxBinder<Object>(type);
+				}
+				else {
+				// get a binder using fallbacks if any
+					result = getFallbackBinder(type);
+				}
 			}
 			if (result!=null) {
 				binders.put(type, result);
@@ -260,7 +270,7 @@ public class BindersImpl implements Binders {
 	}
 
 	private <T> Binder<T> getFallbackBinder(Type type) {
-		for (Class<Binder<?>> binderFallback: binderFallbacks) {
+		for (Class<? extends Binder<?>> binderFallback: binderFallbacks) {
 			Binder<T> binder = newBinder(binderFallback, type);
 			if (binder!=null) {
 				return binder;
@@ -333,7 +343,7 @@ public class BindersImpl implements Binders {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <T> Binder<T> newBinder(Class<Binder<?>> binderClass, Type type) {		
+	private <T> Binder<T> newBinder(Class<? extends Binder<?>> binderClass, Type type) {		
 		try {
 			// first try to instantiate a binder with a no-arg constructor
 			return (Binder<T>) binderClass.newInstance();
@@ -370,7 +380,7 @@ public class BindersImpl implements Binders {
 	}
 
 	@Override
-	public Binders registerFallback(Class<Binder<?>> binderClass) {
+	public Binders registerFallback(Class<? extends Binder<?>> binderClass) {
 		Objects.requireNonNull(binderClass);
 		
 		binderFallbacks.add(binderClass);

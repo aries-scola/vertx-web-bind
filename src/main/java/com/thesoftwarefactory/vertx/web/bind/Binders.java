@@ -215,6 +215,6 @@ public interface Binders {
 
 	public Binders register(Type type, Binder<?> binder);
 
-	public Binders registerFallback(Class<Binder<?>> binderClass);
+	public Binders registerFallback(Class<? extends Binder<?>> binderClass);
 
 }

@@ -208,6 +208,7 @@ import java.time.format.DateTimeFormatter;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
+import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -247,7 +248,7 @@ public class InstantVertxBinder extends BaseBinder<Instant> {
 	
 	@Override
 	public Instant bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		String value = getValue(bindingInfo, context);
+		String value = BinderHelper.getValue(bindingInfo, context);
 		return parseInstant(value, bindingInfo, context);
 	}
 

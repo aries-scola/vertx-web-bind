@@ -201,25 +201,83 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package _java.lang;
+package _java.util;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Objects;
+
+import com.thesoftwarefactory.reflection.type.Types;
+import com.thesoftwarefactory.vertx.web.bind.Binder;
+import com.thesoftwarefactory.vertx.web.bind.Binders;
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
+import com.thesoftwarefactory.vertx.web.bind.UriBuilder;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
-import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
+import com.thesoftwarefactory.vertx.web.bind.impl.BindingInfoImpl;
 
 import io.vertx.ext.web.RoutingContext;
 
-public class ShortVertxBinder extends BaseBinder<Short> {
+public class ArrayVertxBinder<T> extends BaseBinder<T[]> {
 
+	private Binder<? super Object> itemBinder;
+	private Type type;
+	private Class<?> componentType;
+	
+	public ArrayVertxBinder(Type type) {
+		Objects.requireNonNull(type);
+		
+		this.type = type;
+		this.componentType = Types.toClass(Types.getComponentType(type));
+	}
+	
+	@SuppressWarnings("unchecked")
 	@Override
-	public Short bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		String tmp = BinderHelper.getValue(bindingInfo, context);
-		try {
-			return tmp!=null ? Short.parseShort(tmp) : null;
+	public T[] bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
+		T[] result = null;
+		BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
+		Collection<Object> tmpResult = new ArrayList<>();
+		for (int i=0; true; i++) {
+			tmpBindingInfo.index(i);
+			Object item = itemBinder().bindFromContext(tmpBindingInfo, context);
+			if (item!=null) {
+				tmpResult.add(item);
+			}
+			else {
+				break;
+			}
 		}
-		catch (Exception e) {
-			return null;
+		if (tmpResult.size()>0) {
+			result = (T[]) Array.newInstance(componentType, tmpResult.size());
+			int i=0;
+			for (Object item: tmpResult) {
+				Array.set(result, i++, item);
+			}
+		}
+		return result;
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.thesoftwarefactory.vertx.binders.impl.BaseBinder#bindToUrl(com.thesoftwarefactory.vertx.binders.BindingInfo, java.lang.Object, com.thesoftwarefactory.common.lang.UrlBuilder)
+	 */
+	@Override
+	public void bindToUrl(BindingInfo bindingInfo, T[] values, UriBuilder builder) {
+		int i=0;
+		BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
+		for (Object value: values) {
+			tmpBindingInfo.name(bindingInfo.name() + '[' + i + ']');
+			tmpBindingInfo.index(i++);
+			itemBinder.bindToUrl(tmpBindingInfo, value, builder);
 		}
 	}
-
+	
+	private synchronized Binder<?> itemBinder() {
+		if (itemBinder==null) {
+			Type parameterType = Types.getParameterTypes(type)[0];
+			itemBinder = Binders.instance.getBinderByType(parameterType);
+		}
+		return itemBinder;
+	}
+	
 }

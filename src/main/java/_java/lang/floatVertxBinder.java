@@ -203,16 +203,6 @@
  */
 package _java.lang;
 
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
-
-import io.vertx.ext.web.RoutingContext;
-
 public class floatVertxBinder extends FloatVertxBinder {
-
-	@Override
-	public Float bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		Float result = super.bindFromContext(bindingInfo, context);
-		return result!=null ? result : 0;
-	}
 
 }

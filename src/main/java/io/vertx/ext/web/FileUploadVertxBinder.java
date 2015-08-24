@@ -207,6 +207,7 @@ import java.util.Iterator;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
+import com.thesoftwarefactory.vertx.web.bind.impl.BinderHelper;
 
 /**
  * 
@@ -218,7 +219,7 @@ public class FileUploadVertxBinder extends BaseBinder<FileUpload> {
 	@Override
 	public FileUpload bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
 		FileUpload result = null;
-		if (isValidPost(context)) {
+		if (BinderHelper.isValidPost(context)) {
 			try {
 				if (bindingInfo.index() < context.fileUploads().size()) {
 					Iterator<FileUpload> it = context.fileUploads().iterator();
