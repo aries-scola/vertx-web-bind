@@ -255,6 +255,7 @@ public class BindersImpl implements Binders {
 				}
 			}
 			if (result!=null) {
+				logger.log(Level.INFO, "found binder class " + result.getClass().getName() + " for type " + type.toString());
 				binders.put(type, result);
 			}
 		}
@@ -346,7 +347,7 @@ public class BindersImpl implements Binders {
 	    	if (wildcardType.getUpperBounds().length>0) {
 	    		return getBinderClassName(wildcardType.getUpperBounds()[0]);
 	    	}
-			throw new IllegalArgumentException("Can't detemernine the class name of the binder - Unsupported type " + type.toString());
+			throw new IllegalArgumentException("Can't determine the class name of the binder - Unsupported type " + type.toString());
 		}
 		return null;
 	}
@@ -391,7 +392,7 @@ public class BindersImpl implements Binders {
 				return (Binder<T>) binderClass.getDeclaredConstructor(Type.class).newInstance(type);
 			}
 			catch (Throwable t2) {
-				logger.log(Level.INFO, "Could not instantiate binder " + binderClass.getName(), t2);
+				logger.log(Level.WARNING, "Could not instantiate binder " + binderClass.getName(), t2);
 			}
 		}
 		return null;
@@ -405,7 +406,7 @@ public class BindersImpl implements Binders {
 			return newBinder(cls, type);
 		}
 		catch (Throwable t) {
-			logger.log(Level.INFO, "Could not instantiate binder class " + className, t);
+			logger.log(Level.WARNING, "Could not instantiate binder class " + className, t);
 		}
 		return null;
 	}
