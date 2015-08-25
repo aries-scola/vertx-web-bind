@@ -248,11 +248,8 @@ public class BindersImpl implements Binders {
 			// get a binder by naming convention 
 			result = getBinderByNamingConvention(type);
 			if (result==null) {
-				if (Types.isArray(type)) {
-				// return the array binder
-					result = (Binder<T>) new ArrayVertxBinder<Object>(type);
-				}
-				else {
+				result = getBinderForArray(type);
+				if (result==null) {
 				// get a binder using fallbacks if any
 					result = getFallbackBinder(type);
 				}
@@ -268,6 +265,46 @@ public class BindersImpl implements Binders {
 		String binderClassName = getBinderClassName(type);
 		return newBinder(binderClassName, type);
 	}
+
+	@SuppressWarnings("unchecked")
+	private <T> Binder<T> getBinderForArray(Type type) {
+		if (Types.isArray(type)) {
+			return (Binder<T>) new ArrayVertxBinder<Object>(type);
+		}
+		return null;
+/*		Type componentType = Types.getComponentType(type);
+		if (componentType!=null) {
+			if (componentType==boolean.class) {
+				return (Binder<T>) new ArrayVertxBinder<boolean[]>(type);				
+			}
+			else if (componentType==byte.class) {
+				return (Binder<T>) new ArrayVertxBinder<byte[]>(type);				
+			}
+			else if (componentType==char.class) {
+				return (Binder<T>) new ArrayVertxBinder<char[]>(type);				
+			}
+			else if (componentType==double.class) {
+				return (Binder<T>) new ArrayVertxBinder<double[]>(type);				
+			}
+			else if (componentType==float.class) {
+				return (Binder<T>) new ArrayVertxBinder<float[]>(type);				
+			}
+			else if (componentType==int.class) {
+				return (Binder<T>) new ArrayVertxBinder<Object>(type);
+//				return (Binder<T>) new ArrayVertxBinder<int[]>(type);				
+			}
+			else if (componentType==long.class) {
+				return (Binder<T>) new ArrayVertxBinder<long[]>(type);
+			}
+			else if (componentType==short.class) {
+				return (Binder<T>) new ArrayVertxBinder<short[]>(type);
+			}
+			else {
+				return (Binder<T>) new ArrayVertxBinder<Object>(type);
+			}
+		}
+		return null;
+*/	}
 
 	private <T> Binder<T> getFallbackBinder(Type type) {
 		for (Class<? extends Binder<?>> binderFallback: binderFallbacks) {

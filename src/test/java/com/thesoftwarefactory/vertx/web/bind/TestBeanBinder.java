@@ -219,9 +219,25 @@ public class TestBeanBinder extends BaseTestBinder {
 	@Test
 	public void test() throws Exception {
 		Map<String, Collection<String>> params = new HashMap<>();
-		params.put("myInt", Arrays.asList("1"));
+		params.put("myPrimitiveBoolean", Arrays.asList("true"));
+		params.put("myPrimitiveByte", Arrays.asList("1"));
+		params.put("myPrimitiveChar", Arrays.asList("c"));
+		params.put("myPrimitiveDouble", Arrays.asList("101"));
+		params.put("myPrimitiveFloat", Arrays.asList("201.1"));
+		params.put("myPrimitiveInt", Arrays.asList("301"));
+		params.put("myPrimitiveLong", Arrays.asList("401"));
+		params.put("myPrimitiveShort", Arrays.asList("501"));
+		params.put("myPrimitiveIntArray", Arrays.asList("1", "2"));
 		MyBean expectedResult = new MyBean();
-		expectedResult.setMyInt(1);
+		expectedResult.setMyPrimitiveBoolean(true);
+		expectedResult.setMyPrimitiveByte(Byte.parseByte("1"));
+		expectedResult.setMyPrimitiveChar('c');
+		expectedResult.setMyPrimitiveDouble(101D);
+		expectedResult.setMyPrimitiveFloat(201.1F);
+		expectedResult.setMyPrimitiveInt(301);
+		expectedResult.setMyPrimitiveLong(401);
+		expectedResult.setMyPrimitiveShort(Short.parseShort("501"));
+		expectedResult.setMyPrimitiveIntArray(new int[]{1, 2});
 		assertAll(MyBean.class, new BindingInfoImpl(""), params, new Object[] {expectedResult});
 	}
 	

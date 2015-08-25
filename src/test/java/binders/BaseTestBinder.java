@@ -203,6 +203,7 @@
  */
 package binders;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
@@ -239,10 +240,10 @@ public abstract class BaseTestBinder extends WebTestBase {
 				}
 			}
 			else if (result.getClass().isArray()) {
-				Object[] array = (Object[]) result;
-				assertTrue(expectedResults.length == array.length);
+//				Object[] array = (Object[]) result;
+				assertTrue(expectedResults.length == Array.getLength(result));
 				for (int i=0; i<expectedResults.length; i++) {
-					assertTrue(array[i].equals(expectedResults[i]));
+					assertTrue(Array.get(result, i).equals(expectedResults[i]));
 				}
 			}
 		}

@@ -201,88 +201,50 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package com.thesoftwarefactory.vertx.web.bind.impl;
+package com.thesoftwarefactory.vertx.web.bind.java.util;
 
-import java.lang.reflect.Type;
-import java.util.Objects;
+import java.util.Collection;
 
-import com.thesoftwarefactory.reflection.BeanInspector;
-import com.thesoftwarefactory.reflection.Pojo;
-import com.thesoftwarefactory.reflection.Property;
-import com.thesoftwarefactory.reflection.type.Types;
-import com.thesoftwarefactory.vertx.web.bind.Binder;
-import com.thesoftwarefactory.vertx.web.bind.Binders;
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
-import com.thesoftwarefactory.vertx.web.bind.BindingInfo.DefaultValueType;
+import org.junit.Test;
 
-import io.vertx.ext.web.RoutingContext;
+import com.thesoftwarefactory.reflection.type.TypeToken;
 
-/**
- * 
- * @author <a href="mailto:stephane.bastian.dev@gmail.com">Stephane Bastian</a>
- *
- */
-public class BeanBinder extends BaseBinder<Object> {
+import binders.BaseTestBinder;
 
-	private Type type;
-	private Pojo pojo;
-	
-	public BeanBinder(Type type) {
-		Objects.requireNonNull(type);
-		
-		this.type = type;
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.thesoftwarefactory.vertx.mvc.bindings.BaseDataBinder#bind(java.lang.Object, java.lang.reflect.Type, java.lang.String)
-	 */
-	@Override
-	public Object bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		return bindFromContext(bindingInfo, context, type, getPojo());
-	}
-	
-	private Pojo getPojo() {
-		if (pojo==null) {
-			pojo = BeanInspector.commonInspector().getBean(type);
-		}
-		return pojo;
-	}
-	
-	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type) {
-		return bindFromContext(bindingInfo, context, type, BeanInspector.commonInspector().getBean(type));
+public class TestArrayBinder extends BaseTestBinder {
+
+	@Test
+	public void testPrimitive() throws Exception {
+		assertAll(new TypeToken<boolean[]>() {}.type(), new String[] {"true", "false"}, true, false);
+		assertAll(new TypeToken<byte[]>() {}.type(), new String[] {"12", "34"}, Byte.parseByte("12"), Byte.parseByte("34"));
+		assertAll(new TypeToken<char[]>() {}.type(), new String[] {"a", "b"}, 'a', 'b');
+		assertAll(new TypeToken<double[]>() {}.type(), new String[] {"123.4", "456.7"}, 123.4D, 456.7D);
+		assertAll(new TypeToken<float[]>() {}.type(), new String[] {"123.4", "456.7"}, Float.parseFloat("123.4"), Float.parseFloat("456.7"));
+		assertAll(new TypeToken<int[]>() {}.type(), new String[] {"123", "456"}, 123, 456);
+		assertAll(new TypeToken<long[]>() {}.type(), new String[] {"123", "456"}, 123L, 456L);
+		assertAll(new TypeToken<short[]>() {}.type(), new String[] {"123", "456"}, Short.parseShort("123"), Short.parseShort("456"));
 	}
 
-	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
-		Object result = Types.newInstance(type);
-		if (result!=null) {
-			int numberOfPropertySet = 0;
-			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
-			for (Property property: pojo.getProperties()) {
-				tmpBindingInfo.name(property.getName());
-				if (property.getName().equals("myPrimitiveIntArray")) {
-					System.out.print("got it");
-				}
-				if (BinderHelper.getValue(tmpBindingInfo, context)!=null) {
-					try {
-						Binder<?> propertyBinder = Binders.instance.getBinderByType(property.getType());
-						Object propertyValue = propertyBinder.bindFromContext(tmpBindingInfo, context);
-						property.setValue(result, propertyValue);
-						if (propertyValue!=null) {
-							numberOfPropertySet++;
-						}
-					}
-					catch (Throwable t) {
-					// ignore for now
-						System.out.println(t);
-					}
-				}
-			}
-			if (numberOfPropertySet==0 && bindingInfo.defaultValueType()!=DefaultValueType.NEW) {
-				result = null;
-			}
-		}
-		return result;
+	@Test
+	public void testBoxedPrimitive() throws Exception {
+		assertAll(new TypeToken<Boolean[]>() {}.type(), new String[] {"true", "false"}, true, false);
+		assertAll(new TypeToken<Byte[]>() {}.type(), new String[] {"12", "34"}, Byte.parseByte("12"), Byte.parseByte("34"));
+		assertAll(new TypeToken<Character[]>() {}.type(), new String[] {"a", "b"}, 'a', 'b');
+		assertAll(new TypeToken<Double[]>() {}.type(), new String[] {"123.4", "456.7"}, 123.4D, 456.7D);
+		assertAll(new TypeToken<Float[]>() {}.type(), new String[] {"123.4", "456.7"}, Float.parseFloat("123.4"), Float.parseFloat("456.7"));
+		assertAll(new TypeToken<Integer[]>() {}.type(), new String[] {"123", "456"}, 123, 456);
+		assertAll(new TypeToken<Long[]>() {}.type(), new String[] {"123", "456"}, 123L, 456L);
+		assertAll(new TypeToken<Short[]>() {}.type(), new String[] {"123", "456"}, Short.parseShort("123"), Short.parseShort("456"));
+	}
+
+	@Test
+	public void testString() throws Exception {
+		assertAll(String.class, new String[] {"abc", "def"}, "abc", "def");
+	}
+
+	@Test
+	public void testGenericArray() throws Exception {
+//		assertAll(new TypeToken<Collection<String>[]>() {}.type(), new String[] {"abc", "def"}, "abc", "def");
 	}
 
 }
