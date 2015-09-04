@@ -236,7 +236,6 @@ public class BindersImpl implements Binders {
 	public BindersImpl() {
 		binders = new HashMap<>();
 		binderFallbacks = new HashSet<>();
-		registerFallback(BeanBinder.class);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -252,6 +251,9 @@ public class BindersImpl implements Binders {
 				if (result==null) {
 				// get a binder using fallbacks if any
 					result = getFallbackBinder(type);
+					if (result==null) {
+						result = (Binder<T>) new BeanBinder(type);
+					}
 				}
 			}
 			if (result!=null) {
