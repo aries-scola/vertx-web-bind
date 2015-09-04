@@ -205,6 +205,8 @@ package com.thesoftwarefactory.vertx.web.bind.impl;
 
 import java.lang.reflect.Type;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.thesoftwarefactory.reflection.BeanInspector;
 import com.thesoftwarefactory.reflection.Pojo;
@@ -214,6 +216,7 @@ import com.thesoftwarefactory.vertx.web.bind.Binder;
 import com.thesoftwarefactory.vertx.web.bind.Binders;
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo.DefaultValueType;
+import com.thesoftwarefactory.vertx.web.bind.UriBuilder;
 
 import io.vertx.ext.web.RoutingContext;
 
@@ -224,6 +227,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class BeanBinder extends BaseBinder<Object> {
 
+	private final static Logger logger = Logger.getLogger(BeanBinder.class.getName());
+	
 	private Type type;
 	private Pojo pojo;
 	
@@ -260,9 +265,6 @@ public class BeanBinder extends BaseBinder<Object> {
 			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
 			for (Property property: pojo.getProperties()) {
 				tmpBindingInfo.name(property.getName());
-				if (property.getName().equals("myPrimitiveIntArray")) {
-					System.out.print("got it");
-				}
 				if (BinderHelper.getValue(tmpBindingInfo, context)!=null) {
 					try {
 						Binder<?> propertyBinder = Binders.instance.getBinderByType(property.getType());
@@ -273,8 +275,7 @@ public class BeanBinder extends BaseBinder<Object> {
 						}
 					}
 					catch (Throwable t) {
-					// ignore for now
-						System.out.println(t);
+						logger.log(Level.WARNING, "error binding property " + property.toString(), t);
 					}
 				}
 			}
@@ -285,4 +286,25 @@ public class BeanBinder extends BaseBinder<Object> {
 		return result;
 	}
 
+	@Override
+	public void bindToUrl(BindingInfo bindingInfo, Object valueToBind, UriBuilder builder) {
+		if (valueToBind!=null) {
+			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
+			for (Property property: getPojo().getProperties()) {
+				try {
+					Object propertyValue = property.getValue(valueToBind);
+					if (propertyValue!=null) {
+						tmpBindingInfo.name(bindingInfo.name() + "." + property.getName());
+						Binder<Object> propertyBinder = Binders.instance.getBinderByType(property.getType());
+						propertyBinder.bindToUrl(tmpBindingInfo, propertyValue, builder);
+					}
+				}
+				catch (Throwable t) {
+				// ignore for now
+					logger.log(Level.WARNING, "error binding property " + property.toString(), t);
+				}
+			}
+		}
+	}
+	
 }
