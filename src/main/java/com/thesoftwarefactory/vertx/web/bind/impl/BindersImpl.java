@@ -231,10 +231,12 @@ public class BindersImpl implements Binders {
 	
 	@SuppressWarnings("rawtypes")
 	private Map<Type, Binder> binders;
+	private Map<Type, Class<? extends Binder<?>>> bindersByClass;
 	private Collection<Class<? extends Binder<?>>> binderFallbacks;
 	
 	public BindersImpl() {
 		binders = new HashMap<>();
+		bindersByClass = new HashMap<>();
 		binderFallbacks = new HashSet<>();
 	}
 	
@@ -244,15 +246,18 @@ public class BindersImpl implements Binders {
 		// is there a binder already registered for this type?
 		Binder<T> result = binders.get(type);
 		if (result==null) {
-			// get a binder by naming convention 
-			result = getBinderByNamingConvention(type);
+			// get a binder by naming convention
+			result = getRegisteredBinder(type);
 			if (result==null) {
-				result = getBinderForArray(type);
+				result = getBinderByNamingConvention(type);
 				if (result==null) {
-				// get a binder using fallbacks if any
-					result = getFallbackBinder(type);
+					result = getBinderForArray(type);
 					if (result==null) {
-						result = (Binder<T>) new BeanBinder(type);
+					// get a binder using fallbacks if any
+						result = getFallbackBinder(type);
+						if (result==null) {
+							result = (Binder<T>) new BeanBinder(type);
+						}
 					}
 				}
 			}
@@ -262,6 +267,11 @@ public class BindersImpl implements Binders {
 			}
 		}
 		return result;
+	}
+
+	private <T> Binder<T> getRegisteredBinder(Type type) {
+		Class<? extends Binder<?>> binderClass = bindersByClass.get(type);
+		return binderClass!=null ? newBinder(binderClass, type) : null;
 	}
 	
 	private <T> Binder<T> getBinderByNamingConvention(Type type) {
@@ -416,6 +426,12 @@ public class BindersImpl implements Binders {
 	@Override
 	public synchronized Binders register(Type type, Binder<?> binder) {
 		binders.put(type, binder);
+		return this;
+	}
+
+	@Override
+	public synchronized Binders register(Type type, Class<? extends Binder<?>> binderClass) {
+		bindersByClass.put(type, binderClass);
 		return this;
 	}
 

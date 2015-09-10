@@ -213,6 +213,8 @@ public interface Binders {
 
 	public <T> Binder<T> getBinderByType(Type type);
 
+	public Binders register(Type type, Class<? extends Binder<?>> binderClass);
+
 	public Binders register(Type type, Binder<?> binder);
 
 	public Binders registerFallback(Class<? extends Binder<?>> binderClass);
