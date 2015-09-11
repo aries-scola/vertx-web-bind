@@ -205,6 +205,7 @@ package _java.time;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.impl.BaseBinder;
@@ -214,6 +215,16 @@ import io.vertx.ext.web.RoutingContext;
 
 public class InstantVertxBinder extends BaseBinder<Instant> {
 
+	private final static DateTimeFormatter[] localeFormatters;
+	static {
+		localeFormatters = new DateTimeFormatter[] {
+			DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL),
+			DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG),
+			DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM),
+			DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT)
+		};
+	}
+		
 	private final static DateTimeFormatter[] formatters;
 	static {
 		formatters = new DateTimeFormatter[]{
@@ -227,6 +238,18 @@ public class InstantVertxBinder extends BaseBinder<Instant> {
 	
 	public final static Instant parseInstant(String value, BindingInfo bindingInfo, RoutingContext context) {
 		if (value!=null) {
+			//TODO Vertx3.1 should support a Locale
+/*			/// TODO: get the current locale
+			Locale locale = null;
+			for (DateTimeFormatter formatter: localeFormatters) {
+				try {
+					return Instant.from(formatter.withLocale(locale).parse(value));
+				}
+				catch (Throwable t) {
+				// ignore
+				}
+			}
+*/
 			// ms from epoch
 			try {
 				return Instant.ofEpochMilli(Long.valueOf(value));
