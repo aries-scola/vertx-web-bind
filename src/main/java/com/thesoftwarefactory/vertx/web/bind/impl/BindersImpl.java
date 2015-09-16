@@ -270,7 +270,32 @@ public class BindersImpl implements Binders {
 	}
 
 	private <T> Binder<T> getRegisteredBinder(Type type) {
-		Class<? extends Binder<?>> binderClass = bindersByClass.get(type);
+		
+		Class<? extends Binder<?>> binderClass = null;
+		
+		for (Type regType : bindersByClass.keySet()) {
+			
+			if (regType.equals(type)) {
+				binderClass = bindersByClass.get(type);
+			} else {
+				// FIXME : very simplistic checkings, not all cases are supported
+				if (regType instanceof ParameterizedType
+						&& type instanceof ParameterizedType) {
+					
+					ParameterizedType pt1 = (ParameterizedType) regType;
+					ParameterizedType pt2 = (ParameterizedType) type;
+					
+					if (pt1.getRawType().equals(pt2.getRawType())) {
+						binderClass = bindersByClass.get(regType);
+					}
+				}
+			}
+			
+			if (binderClass!=null) {
+				break;
+			}
+		}
+		
 		return binderClass!=null ? newBinder(binderClass, type) : null;
 	}
 	
