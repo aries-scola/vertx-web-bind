@@ -204,6 +204,11 @@
 package _java.time;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 
@@ -236,6 +241,13 @@ public class InstantVertxBinder extends BaseBinder<Instant> {
 		};
 	}
 	
+	private final static DateTimeFormatter[] simpleDateFormatters;
+	static {
+		simpleDateFormatters = new DateTimeFormatter[]{
+			DateTimeFormatter.ofPattern("dd/MM/yyyy")
+		};
+	}
+	
 	public final static Instant parseInstant(String value, BindingInfo bindingInfo, RoutingContext context) {
 		if (value!=null) {
 			//TODO Vertx3.1 should support a Locale
@@ -260,6 +272,18 @@ public class InstantVertxBinder extends BaseBinder<Instant> {
 			for (DateTimeFormatter formatter: formatters) {
 				try {
 					return Instant.from(formatter.parse(value));
+				}
+				catch (Throwable t) {
+				// ignore
+				}
+			}
+			
+			// Fallback to partial instants and complete parse data
+			for (DateTimeFormatter formatter: simpleDateFormatters) {
+				try {
+					LocalDate ld = formatter.parse(value, LocalDate::from);
+					LocalDateTime ldt = ld.atTime(LocalTime.MIN);
+					return ldt.toInstant(ZoneOffset.of("+2"));
 				}
 				catch (Throwable t) {
 				// ignore
