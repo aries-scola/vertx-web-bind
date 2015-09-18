@@ -264,7 +264,7 @@ public class BeanBinder extends BaseBinder<Object> {
 			int numberOfPropertySet = 0;
 			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
 			for (Property property: pojo.getProperties()) {
-				tmpBindingInfo.name(bindingInfo.name() + "." + property.getName());
+				tmpBindingInfo.name(property.getName());
 				if (BinderHelper.getValue(tmpBindingInfo, context)!=null) {
 					try {
 						Binder<?> propertyBinder = Binders.instance.getBinderByType(property.getType());
