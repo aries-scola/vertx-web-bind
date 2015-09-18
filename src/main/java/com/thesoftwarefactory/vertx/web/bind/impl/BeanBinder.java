@@ -216,6 +216,7 @@ import com.thesoftwarefactory.vertx.web.bind.Binder;
 import com.thesoftwarefactory.vertx.web.bind.Binders;
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo;
 import com.thesoftwarefactory.vertx.web.bind.BindingInfo.DefaultValueType;
+import com.thesoftwarefactory.vertx.web.bind.Is;
 import com.thesoftwarefactory.vertx.web.bind.UriBuilder;
 
 import io.vertx.ext.web.RoutingContext;
@@ -259,13 +260,49 @@ public class BeanBinder extends BaseBinder<Object> {
 	}
 
 	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
+		Object result = _bindFromContext(bindingInfo, context, type, pojo);
+		if (result==null && Is.rootBinding(bindingInfo)) {
+			// didn't return any result. try to bind *without* prefix
+			BindingInfoImpl copy = BindingInfoImpl.copy(bindingInfo);
+			result = _bindFromContext(copy.name(null), context, type, pojo);
+		}
+		if (result==null && bindingInfo.defaultValueType()==DefaultValueType.NEW) {
+			result = Types.newInstance(type);
+		}
+		return result;
+	}
+
+	private final static boolean hasPotentialMatchingKeys(String prefix, RoutingContext context) {
+		if (!Is.isEmpty(prefix)) {
+			for (String key: context.request().params().names()) {
+				if (key.startsWith(prefix)) {
+					return true;
+				}
+			}
+			if (BinderHelper.isValidPost(context)) {
+				for (String key: context.request().formAttributes().names()) {
+					if (key.startsWith(prefix)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	private final static Object _bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
 		Object result = Types.newInstance(type);
 		if (result!=null) {
 			int numberOfPropertySet = 0;
 			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
 			for (Property property: pojo.getProperties()) {
-				tmpBindingInfo.name(property.getName());
-				if (BinderHelper.getValue(tmpBindingInfo, context)!=null) {
+				if (Is.isEmpty(bindingInfo.name())) {
+					tmpBindingInfo.name(property.getName());
+				}
+				else {
+					tmpBindingInfo.name(bindingInfo.name() + "." + property.getName());
+				}
+				if (hasPotentialMatchingKeys(tmpBindingInfo.name(), context)) {
 					try {
 						Binder<?> propertyBinder = Binders.instance.getBinderByType(property.getType());
 						Object propertyValue = propertyBinder.bindFromContext(tmpBindingInfo, context);
@@ -279,7 +316,7 @@ public class BeanBinder extends BaseBinder<Object> {
 					}
 				}
 			}
-			if (numberOfPropertySet==0 && bindingInfo.defaultValueType()!=DefaultValueType.NEW) {
+			if (numberOfPropertySet==0) {
 				result = null;
 			}
 		}

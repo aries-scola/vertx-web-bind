@@ -203,7 +203,7 @@
  */
 package com.thesoftwarefactory.vertx.web.bind;
 
-class Is {
+public class Is {
 
 	public final static boolean isEmpty(Iterable<?> value) {
 		return (value==null) ? true : !value.iterator().hasNext();
@@ -215,6 +215,10 @@ class Is {
 
 	public final static boolean isEmpty(String value) {
 		return (value==null) ? true : value.length()==0;
+	}
+	
+	public final static boolean rootBinding(BindingInfo bindingInfo) {
+		return bindingInfo.name()!=null && !bindingInfo.name().contains(".");
 	}
 	
 }
