@@ -216,18 +216,23 @@ import binders.BaseTestBinder;
 
 public class TestBeanBinder extends BaseTestBinder {
 
-	@Test
-	public void test() throws Exception {
+	private String fieldName(String prefix, String fieldName) {
+		return prefix!=null && prefix.length()>0 ? prefix + "." + fieldName : fieldName;
+	}
+	
+	private void testBinding(String prefix) throws Exception {
 		Map<String, Collection<String>> params = new HashMap<>();
-		params.put("myPrimitiveBoolean", Arrays.asList("true"));
-		params.put("myPrimitiveByte", Arrays.asList("1"));
-		params.put("myPrimitiveChar", Arrays.asList("c"));
-		params.put("myPrimitiveDouble", Arrays.asList("101"));
-		params.put("myPrimitiveFloat", Arrays.asList("201.1"));
-		params.put("myPrimitiveInt", Arrays.asList("301"));
-		params.put("myPrimitiveLong", Arrays.asList("401"));
-		params.put("myPrimitiveShort", Arrays.asList("501"));
-		params.put("myPrimitiveIntArray", Arrays.asList("1", "2"));
+		params.put(fieldName(prefix, "myPrimitiveBoolean"), Arrays.asList("true"));
+		params.put(fieldName(prefix, "myPrimitiveByte"), Arrays.asList("1"));
+		params.put(fieldName(prefix, "myPrimitiveChar"), Arrays.asList("c"));
+		params.put(fieldName(prefix, "myPrimitiveDouble"), Arrays.asList("101"));
+		params.put(fieldName(prefix, "myPrimitiveFloat"), Arrays.asList("201.1"));
+		params.put(fieldName(prefix, "myPrimitiveInt"), Arrays.asList("301"));
+		params.put(fieldName(prefix, "myPrimitiveLong"), Arrays.asList("401"));
+		params.put(fieldName(prefix, "myPrimitiveShort"), Arrays.asList("501"));
+		params.put(fieldName(prefix, "myPrimitiveIntArray"), Arrays.asList("1", "2"));
+		params.put(fieldName(prefix, "myBean.myString"), Arrays.asList("String value"));
+		
 		MyBean expectedResult = new MyBean();
 		expectedResult.setMyPrimitiveBoolean(true);
 		expectedResult.setMyPrimitiveByte(Byte.parseByte("1"));
@@ -238,7 +243,20 @@ public class TestBeanBinder extends BaseTestBinder {
 		expectedResult.setMyPrimitiveLong(401);
 		expectedResult.setMyPrimitiveShort(Short.parseShort("501"));
 		expectedResult.setMyPrimitiveIntArray(new int[]{1, 2});
-		assertAll(MyBean.class, new BindingInfoImpl(""), params, new Object[] {expectedResult});
+		MyBean nestedBean = new MyBean();
+		nestedBean.setMyString("String value");
+		expectedResult.setMyBean(nestedBean);
+		assertAll(MyBean.class, new BindingInfoImpl(prefix), params, new Object[] {expectedResult});
 	}
-	
+
+	@Test
+	public void testFlatBinding() throws Exception {
+		testBinding("");
+	}
+
+	@Test
+	public void testPrefixedBinding() throws Exception {
+		testBinding("monBean");
+	}
+
 }
