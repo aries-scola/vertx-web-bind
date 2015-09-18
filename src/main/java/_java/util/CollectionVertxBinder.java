@@ -218,9 +218,9 @@ import com.thesoftwarefactory.vertx.web.bind.impl.BindingInfoImpl;
 
 import io.vertx.ext.web.RoutingContext;
 
-public class CollectionVertxBinder<T extends Collection<Object>> extends BaseBinder<T> {
+public class CollectionVertxBinder<T> extends BaseBinder<Collection<T>> {
 
-	private Binder<? super Object> itemBinder;
+	private Binder<T> itemBinder;
 	private Type type;
 	
 	public CollectionVertxBinder(Type type) {
@@ -230,12 +230,12 @@ public class CollectionVertxBinder<T extends Collection<Object>> extends BaseBin
 	}
 	
 	@Override
-	public T bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		T result = null;
+	public Collection<T> bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
+		Collection<T> result = null;
 		BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
 		for (int i=0; true; i++) {
 			tmpBindingInfo.index(i);
-			Object item = itemBinder().bindFromContext(tmpBindingInfo, context);
+			T item = itemBinder().bindFromContext(tmpBindingInfo, context);
 			if (item!=null) {
 				if (result==null) {
 					result = newInstance();
@@ -253,17 +253,17 @@ public class CollectionVertxBinder<T extends Collection<Object>> extends BaseBin
 	 * @see com.thesoftwarefactory.vertx.binders.impl.BaseBinder#bindToUrl(com.thesoftwarefactory.vertx.binders.BindingInfo, java.lang.Object, com.thesoftwarefactory.common.lang.UrlBuilder)
 	 */
 	@Override
-	public void bindToUrl(BindingInfo bindingInfo, T values, UriBuilder builder) {
+	public void bindToUrl(BindingInfo bindingInfo, Collection<T> values, UriBuilder builder) {
 		int i=0;
 		BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
-		for (Object value: values) {
+		for (T value: values) {
 			tmpBindingInfo.name(bindingInfo.name() + '[' + i + ']');
 			tmpBindingInfo.index(i++);
 			itemBinder.bindToUrl(tmpBindingInfo, value, builder);
 		}
 	}
 	
-	private synchronized Binder<?> itemBinder() {
+	private synchronized Binder<T> itemBinder() {
 		if (itemBinder==null) {
 			Type parameterType = Types.getParameterTypes(type)[0];
 			itemBinder = Binders.instance.getBinderByType(parameterType);
@@ -272,8 +272,8 @@ public class CollectionVertxBinder<T extends Collection<Object>> extends BaseBin
 	}
 	
 	@SuppressWarnings("unchecked")
-	protected T newInstance() {
-		return (T) new ArrayList<Object>();
+	protected Collection<T> newInstance() {
+		return new ArrayList<T>();
 	}
 
 }

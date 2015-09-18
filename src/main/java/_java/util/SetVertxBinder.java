@@ -207,15 +207,15 @@ import java.lang.reflect.Type;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class SetVertxBinder extends CollectionVertxBinder<Set<Object>> {
+public class SetVertxBinder<T> extends CollectionVertxBinder<T> {
 
 	/* (non-Javadoc)
 	 * @see _java.util.CollectionVertxBinder#newInstance()
 	 */
 	@Override
-	protected Set<Object> newInstance() {
+	protected Set<T> newInstance() {
 		// use a linkedHashSet to keep the insertion order
-		return new LinkedHashSet<Object>();
+		return new LinkedHashSet<T>();
 	}
 
 	public SetVertxBinder(Type type) {

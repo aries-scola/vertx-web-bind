@@ -204,9 +204,8 @@
 package _java.util;
 
 import java.lang.reflect.Type;
-import java.util.List;
 
-public class ListVertxBinder extends CollectionVertxBinder<List<Object>> {
+public class ListVertxBinder<T> extends CollectionVertxBinder<T> {
 
 	public ListVertxBinder(Type type) {
 		super(type);
