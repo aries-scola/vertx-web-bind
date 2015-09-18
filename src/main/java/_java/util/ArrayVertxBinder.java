@@ -219,9 +219,9 @@ import com.thesoftwarefactory.vertx.web.bind.impl.BindingInfoImpl;
 
 import io.vertx.ext.web.RoutingContext;
 
-public class ArrayVertxBinder<T> extends BaseBinder<T> {
+public class ArrayVertxBinder<T> extends BaseBinder<T[]> {
 
-	private Binder<? super Object> itemBinder;
+	private Binder<T> itemBinder;
 	private Type type;
 	private Class<?> componentType;
 	
@@ -234,13 +234,13 @@ public class ArrayVertxBinder<T> extends BaseBinder<T> {
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public T bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		T result = null;
+	public T[] bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
+		T[] result = null;
 		BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
-		Collection<Object> tmpItems = new ArrayList<>();
+		Collection<T> tmpItems = new ArrayList<>();
 		for (int i=0; true; i++) {
 			tmpBindingInfo.index(i);
-			Object item = itemBinder().bindFromContext(tmpBindingInfo, context);
+			T item = itemBinder().bindFromContext(tmpBindingInfo, context);
 			if (item!=null) {
 				tmpItems.add(item);
 			}
@@ -249,7 +249,7 @@ public class ArrayVertxBinder<T> extends BaseBinder<T> {
 			}
 		}
 		if (tmpItems.size()>0) {
-			result = (T) Array.newInstance(componentType, tmpItems.size());
+			result = (T[]) Array.newInstance(componentType, tmpItems.size());
 			int i=0;
 			for (Object item: tmpItems) {
 				Array.set(result, i++, item);
@@ -262,12 +262,11 @@ public class ArrayVertxBinder<T> extends BaseBinder<T> {
 	 * @see com.thesoftwarefactory.vertx.binders.impl.BaseBinder#bindToUrl(com.thesoftwarefactory.vertx.binders.BindingInfo, java.lang.Object, com.thesoftwarefactory.common.lang.UrlBuilder)
 	 */
 	@Override
-	public void bindToUrl(BindingInfo bindingInfo, T values, UriBuilder builder) {
+	public void bindToUrl(BindingInfo bindingInfo, T[] values, UriBuilder builder) {
 		if (values!=null && values.getClass().isArray()) {
 			int i=0;
 			BindingInfoImpl tmpBindingInfo = BindingInfoImpl.copy(bindingInfo);
-			Object[] tmpValues = (Object[]) values;
-			for (Object value: tmpValues) {
+			for (T value: values) {
 				tmpBindingInfo.name(bindingInfo.name() + '[' + i + ']');
 				tmpBindingInfo.index(i++);
 				itemBinder.bindToUrl(tmpBindingInfo, value, builder);
@@ -275,7 +274,7 @@ public class ArrayVertxBinder<T> extends BaseBinder<T> {
 		}
 	}
 	
-	private synchronized Binder<?> itemBinder() {
+	private synchronized Binder<T> itemBinder() {
 		if (itemBinder==null) {
 			Type parameterType = Types.getParameterTypes(type)[0];
 			itemBinder = Binders.instance.getBinderByType(parameterType);
