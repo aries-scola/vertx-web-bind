@@ -219,7 +219,4 @@ public interface Binders {
 	@SuppressWarnings("rawtypes")
 	public Binders register(Type type, Binder binder);
 
-	@SuppressWarnings("rawtypes")
-	public Binders registerFallback(Class<? extends Binder> binderClass);
-
 }
