@@ -264,7 +264,7 @@ public class BeanBinder extends BaseBinder<Object> {
 		if (result==null && Is.rootBinding(bindingInfo)) {
 			// didn't return any result. try to bind *without* prefix
 			BindingInfoImpl copy = BindingInfoImpl.copy(bindingInfo);
-			result = _bindFromContext(copy.name(null), context, type, pojo);
+			result = _bindFromContext(copy.name(""), context, type, pojo);
 		}
 		if (result==null && bindingInfo.defaultValueType()==DefaultValueType.NEW) {
 			result = Types.newInstance(type);
