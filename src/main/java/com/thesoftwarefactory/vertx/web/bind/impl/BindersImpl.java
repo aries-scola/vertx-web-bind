@@ -204,18 +204,13 @@
 package com.thesoftwarefactory.vertx.web.bind.impl;
 
 import java.lang.reflect.GenericArrayType;
-import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.thesoftwarefactory.reflection.type.TypeToken;
 import com.thesoftwarefactory.reflection.type.Types;
 import com.thesoftwarefactory.vertx.web.bind.Binder;
 import com.thesoftwarefactory.vertx.web.bind.Binders;
@@ -225,168 +220,81 @@ import _java.util.ArrayVertxBinder;
 public class BindersImpl implements Binders {
 	private final static String BINDER_PREFIX = "";
 	private final static String BINDER_SUFFIX = "VertxBinder";
-	private final static String ARRAY_BINDER = BINDER_PREFIX + "_java.lang.Array" + BINDER_SUFFIX;
-	private final static String GENERIC_ARRAY_BINDER = BINDER_PREFIX + "_java.lang.GenericArray" + BINDER_SUFFIX;
 	private final static Logger logger = Logger.getLogger(BindersImpl.class.getName());
 	
 	@SuppressWarnings("rawtypes")
+	private Map<Type, Class<? extends Binder>> binderClasses;
+	@SuppressWarnings("rawtypes")
 	private Map<Type, Binder> binders;
-	private Map<Type, Class<? extends Binder<?>>> bindersByClass;
-	private Collection<Class<? extends Binder<?>>> binderFallbacks;
 	
 	public BindersImpl() {
 		binders = new HashMap<>();
-		bindersByClass = new HashMap<>();
-		binderFallbacks = new HashSet<>();
+		binderClasses = new HashMap<>();
+		// register special binders for array and generic array
+		registerDefaultBinders();
+	}
+	
+	private <T> Binder<T> getBinderByNamingConvention(Type type) {
+		Class<?> cls = Types.getRawClass(type);
+		if (cls!=null) {
+			String tmp = handlePrimitive(cls.getName());
+			if (tmp.startsWith("java")) {
+				tmp = "_" + tmp;
+			}
+			String binderClassName = BINDER_PREFIX + tmp + BINDER_SUFFIX;
+			return newBinder(binderClassName, type);
+		}
+		return null;
+	} 
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected <T> Binder<T> getBinderByRegisteredType(Type type) {
+		Class<? extends Binder> binderClass = binderClasses.get(type);
+		if (binderClass!=null) {
+			return newBinder(binderClass, type);
+		}
+		if (type instanceof Class) {
+			Class<?> cls = (Class<?>) type;
+			if (cls.isArray()) {
+				return (Binder<T>) new ArrayVertxBinder<T>(type);
+			}
+		}
+		else if (type instanceof GenericArrayType) {
+			return (Binder<T>) new ArrayVertxBinder<T>(type);
+		}
+		for (Map.Entry<Type, Class<? extends Binder>> entry: binderClasses.entrySet()) {
+			if (Types.isAssignable(entry.getKey(), type)) {
+				return newBinder(entry.getValue(), type);
+			}
+		}
+		return null;
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized <T> Binder<T> getBinderByType(Type type) {
-		// is there a binder already registered for this type?
-		Binder<T> result = binders.get(type);
+		// is there a binder already instantiated for this type?
+		Binder<T> result = getCachedBinder(type);
 		if (result==null) {
-			// get a binder by naming convention
-			result = getRegisteredBinder(type);
+			result = getBinderByRegisteredType(type);
 			if (result==null) {
 				result = getBinderByNamingConvention(type);
 				if (result==null) {
-					result = getBinderForArray(type);
-					if (result==null) {
-					// get a binder using fallbacks if any
-						result = getFallbackBinder(type);
-						if (result==null) {
-							result = (Binder<T>) new BeanBinder(type);
-						}
-					}
+				// in any cases, fallback to a default binder
+					result = (Binder<T>) new BeanBinder(type);
 				}
-			}
-			if (result!=null) {
-				logger.log(Level.INFO, "found binder class " + result.getClass().getName() + " for type " + type.toString());
-				binders.put(type, result);
+				if (result!=null) {
+					logger.log(Level.INFO, "found binder class " + result.getClass().getName() + " for type " + type.toString());
+					binders.put(type, result);
+				}
 			}
 		}
 		return result;
 	}
-
-	private <T> Binder<T> getRegisteredBinder(Type type) {
-		
-		Class<? extends Binder<?>> binderClass = null;
-		
-		for (Type regType : bindersByClass.keySet()) {
-			
-			if (regType.equals(type)) {
-				binderClass = bindersByClass.get(type);
-			} else {
-				// FIXME : very simplistic checkings, not all cases are supported
-				if (regType instanceof ParameterizedType
-						&& type instanceof ParameterizedType) {
-					
-					ParameterizedType pt1 = (ParameterizedType) regType;
-					ParameterizedType pt2 = (ParameterizedType) type;
-					
-					if (pt1.getRawType().equals(pt2.getRawType())) {
-						binderClass = bindersByClass.get(regType);
-					}
-				}
-			}
-			
-			if (binderClass!=null) {
-				break;
-			}
-		}
-		
-		return binderClass!=null ? newBinder(binderClass, type) : null;
-	}
 	
-	private <T> Binder<T> getBinderByNamingConvention(Type type) {
-		String binderClassName = getBinderClassName(type);
-		return newBinder(binderClassName, type);
-	}
-
 	@SuppressWarnings("unchecked")
-	private <T> Binder<T> getBinderForArray(Type type) {
-		if (Types.isArray(type)) {
-			return (Binder<T>) new ArrayVertxBinder<Object>(type);
-		}
-		return null;
-/*		Type componentType = Types.getComponentType(type);
-		if (componentType!=null) {
-			if (componentType==boolean.class) {
-				return (Binder<T>) new ArrayVertxBinder<boolean[]>(type);				
-			}
-			else if (componentType==byte.class) {
-				return (Binder<T>) new ArrayVertxBinder<byte[]>(type);				
-			}
-			else if (componentType==char.class) {
-				return (Binder<T>) new ArrayVertxBinder<char[]>(type);				
-			}
-			else if (componentType==double.class) {
-				return (Binder<T>) new ArrayVertxBinder<double[]>(type);				
-			}
-			else if (componentType==float.class) {
-				return (Binder<T>) new ArrayVertxBinder<float[]>(type);				
-			}
-			else if (componentType==int.class) {
-				return (Binder<T>) new ArrayVertxBinder<Object>(type);
-//				return (Binder<T>) new ArrayVertxBinder<int[]>(type);				
-			}
-			else if (componentType==long.class) {
-				return (Binder<T>) new ArrayVertxBinder<long[]>(type);
-			}
-			else if (componentType==short.class) {
-				return (Binder<T>) new ArrayVertxBinder<short[]>(type);
-			}
-			else {
-				return (Binder<T>) new ArrayVertxBinder<Object>(type);
-			}
-		}
-		return null;
-*/	}
-
-	private <T> Binder<T> getFallbackBinder(Type type) {
-		for (Class<? extends Binder<?>> binderFallback: binderFallbacks) {
-			Binder<T> binder = newBinder(binderFallback, type);
-			if (binder!=null) {
-				return binder;
-			}
-		}
-		return null;
-	}
-
-	private String getBinderClassName(Type type) {
-		if (type instanceof Class) {
-			Class<?> cls = (Class<?>) type;
-			String tmp = handlePrimitive(cls.getName());
-			if (tmp.startsWith("java")) {
-				tmp = "_" + tmp;
-			}
-			if (cls.isArray()) {
-				return ARRAY_BINDER;
-			}
-			else {
-				return BINDER_PREFIX + tmp + BINDER_SUFFIX;
-			}
-		}
-		else if (type instanceof ParameterizedType) {
-			ParameterizedType parameterizedType = (ParameterizedType) type;
-			return getBinderClassName(parameterizedType.getRawType());
-		}
-		else if (type instanceof GenericArrayType) {
-			return GENERIC_ARRAY_BINDER;
-		}
-	    else if (type instanceof TypeVariable) {
-	    	TypeVariable<?> typeVariable = (TypeVariable<?>) type;
-	        return getBinderClassName(typeVariable.getBounds()[0]);
-		}
-		else if (type instanceof WildcardType) {
-	    	WildcardType wildcardType = (WildcardType) type;
-	    	if (wildcardType.getUpperBounds().length>0) {
-	    		return getBinderClassName(wildcardType.getUpperBounds()[0]);
-	    	}
-			throw new IllegalArgumentException("Can't determine the class name of the binder - Unsupported type " + type.toString());
-		}
-		return null;
+	private <T> Binder<T> getCachedBinder(Type type) {
+		return binders.get(type);
 	}
 	
 	private String handlePrimitive(String className) {
@@ -417,8 +325,8 @@ public class BindersImpl implements Binders {
 		return className;
 	}
 
-	@SuppressWarnings("unchecked")
-	private <T> Binder<T> newBinder(Class<? extends Binder<?>> binderClass, Type type) {		
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private <T> Binder<T> newBinder(Class<? extends Binder> binderClass, Type type) {		
 		try {
 			// first try to instantiate a binder with a no-arg constructor
 			return (Binder<T>) binderClass.newInstance();
@@ -434,7 +342,7 @@ public class BindersImpl implements Binders {
 		}
 		return null;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private <T> Binder<T> newBinder(String className, Type type) {
 		try {
@@ -447,24 +355,31 @@ public class BindersImpl implements Binders {
 		}
 		return null;
 	}
-
+	
 	@Override
-	public synchronized Binders register(Type type, Binder<?> binder) {
+	@SuppressWarnings("rawtypes")
+	public synchronized Binders register(Type type, Binder binder) {
 		binders.put(type, binder);
 		return this;
 	}
 
 	@Override
-	public synchronized Binders register(Type type, Class<? extends Binder<?>> binderClass) {
-		bindersByClass.put(type, binderClass);
+	@SuppressWarnings("rawtypes")
+	public synchronized Binders register(Type type, Class<? extends Binder> binderClass) {
+		binderClasses.put(type, binderClass);
 		return this;
 	}
 
-	@Override
-	public Binders registerFallback(Class<? extends Binder<?>> binderClass) {
-		Objects.requireNonNull(binderClass);
-		
-		binderFallbacks.add(binderClass);
+	protected Binders registerDefaultBinders() {
+		// register specific binders for primitive arrays
+		register(new TypeToken<boolean[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<byte[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<char[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<double[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<float[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<int[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<long[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
+		register(new TypeToken<short[]>(){}.type(), _java.util.PrimitiveArrayBinder.class);
 		return this;
 	}
 
