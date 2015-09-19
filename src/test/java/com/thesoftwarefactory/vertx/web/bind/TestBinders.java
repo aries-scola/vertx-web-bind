@@ -20,7 +20,7 @@ public class TestBinders {
 
 		binder = Binders.instance.getBinderByType(MyGeneric.class);
 		assertTrue(binder!=null);
-
+		assertTrue(binder instanceof MyGenericBinder);
 	}
 	
 }
