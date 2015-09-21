@@ -263,7 +263,7 @@ public class BindersImpl implements Binders {
 			return (Binder<T>) new ArrayVertxBinder<T>(type);
 		}
 		for (Map.Entry<Type, Class<? extends Binder>> entry: binderClasses.entrySet()) {
-			if (Types.isAssignable(entry.getKey(), type)) {
+			if (Types.isAssignable(type, entry.getKey())) {
 				return newBinder(entry.getValue(), type);
 			}
 		}

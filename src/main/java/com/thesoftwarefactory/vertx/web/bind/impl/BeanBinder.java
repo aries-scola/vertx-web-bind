@@ -230,67 +230,17 @@ public class BeanBinder extends BaseBinder<Object> {
 
 	private final static Logger logger = Logger.getLogger(BeanBinder.class.getName());
 	
-	private Type type;
-	private Pojo pojo;
-	
-	public BeanBinder(Type type) {
-		Objects.requireNonNull(type);
-		
-		this.type = type;
-	}
-	
-	/*
-	 * (non-Javadoc)
-	 * @see com.thesoftwarefactory.vertx.mvc.bindings.BaseDataBinder#bind(java.lang.Object, java.lang.reflect.Type, java.lang.String)
-	 */
-	@Override
-	public Object bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
-		return bindFromContext(bindingInfo, context, type, getPojo());
-	}
-	
-	private Pojo getPojo() {
-		if (pojo==null) {
-			pojo = BeanInspector.commonInspector().getBean(type);
-		}
-		return pojo;
-	}
-	
 	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type) {
-		return bindFromContext(bindingInfo, context, type, BeanInspector.commonInspector().getBean(type));
+		return bindFromContextThenNoPrefix(bindingInfo, context, type, BeanInspector.commonInspector().getBean(type));
 	}
 
-	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
-		Object result = _bindFromContext(bindingInfo, context, type, pojo);
-		if (result==null && Is.rootBinding(bindingInfo)) {
-			// didn't return any result. try to bind *without* prefix
-			BindingInfoImpl copy = BindingInfoImpl.copy(bindingInfo);
-			result = _bindFromContext(copy.name(""), context, type, pojo);
-		}
-		if (result==null && bindingInfo.defaultValueType()==DefaultValueType.NEW) {
-			result = Types.newInstance(type);
-		}
-		return result;
-	}
-
-	private final static boolean hasPotentialMatchingKeys(String prefix, RoutingContext context) {
-		if (!Is.isEmpty(prefix)) {
-			for (String key: context.request().params().names()) {
-				if (key.startsWith(prefix)) {
-					return true;
-				}
-			}
-			if (BinderHelper.isValidPost(context)) {
-				for (String key: context.request().formAttributes().names()) {
-					if (key.startsWith(prefix)) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
+	public final static Object bindFromContextNoPrefix(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
+		// bind *without* prefix
+		BindingInfoImpl copy = BindingInfoImpl.copy(bindingInfo).name("");
+		return bindFromContext(copy, context, type, pojo);
 	}
 	
-	private final static Object _bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
+	public final static Object bindFromContext(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
 		Object result = Types.newInstance(type);
 		if (result!=null) {
 			int numberOfPropertySet = 0;
@@ -322,7 +272,56 @@ public class BeanBinder extends BaseBinder<Object> {
 		}
 		return result;
 	}
+	
+	public final static Object bindFromContextThenNoPrefix(BindingInfo bindingInfo, RoutingContext context, Type type, Pojo pojo) {
+		Object result = bindFromContext(bindingInfo, context, type, pojo);
+		if (result==null && Is.rootBinding(bindingInfo)) {
+			// didn't return any result. try to bind *without* prefix
+			result = bindFromContextNoPrefix(bindingInfo, context, type, pojo);
+		}
+		if (result==null && bindingInfo.defaultValueType()==DefaultValueType.NEW) {
+			result = Types.newInstance(type);
+		}
+		return result;
+	}
+	
+	private final static boolean hasPotentialMatchingKeys(String prefix, RoutingContext context) {
+		if (!Is.isEmpty(prefix)) {
+			for (String key: context.request().params().names()) {
+				if (key.startsWith(prefix)) {
+					return true;
+				}
+			}
+			if (BinderHelper.isValidPost(context)) {
+				for (String key: context.request().formAttributes().names()) {
+					if (key.startsWith(prefix)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
+	private Pojo pojo;
+	
+	private Type type;
 
+	public BeanBinder(Type type) {
+		Objects.requireNonNull(type);
+		
+		this.type = type;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.thesoftwarefactory.vertx.mvc.bindings.BaseDataBinder#bind(java.lang.Object, java.lang.reflect.Type, java.lang.String)
+	 */
+	@Override
+	public Object bindFromContext(BindingInfo bindingInfo, RoutingContext context) {
+		return bindFromContextThenNoPrefix(bindingInfo, context, type, getPojo());
+	}
+	
 	@Override
 	public void bindToUrl(BindingInfo bindingInfo, Object valueToBind, UriBuilder builder) {
 		if (valueToBind!=null) {
@@ -342,6 +341,13 @@ public class BeanBinder extends BaseBinder<Object> {
 				}
 			}
 		}
+	}
+
+	private Pojo getPojo() {
+		if (pojo==null) {
+			pojo = BeanInspector.commonInspector().getBean(type);
+		}
+		return pojo;
 	}
 	
 }

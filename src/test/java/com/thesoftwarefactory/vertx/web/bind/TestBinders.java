@@ -12,7 +12,7 @@ public class TestBinders {
 
 	@Test
 	public void testRegisterBinderByClass() {
-		Type type = new TypeToken<MyGeneric<String>>(){}.type();
+		Type type = new TypeToken<MyGeneric>(){}.type();
 		Binders.instance.register(type, MyGenericBinder.class);
 		
 		Binder binder = Binders.instance.getBinderByType(type);
