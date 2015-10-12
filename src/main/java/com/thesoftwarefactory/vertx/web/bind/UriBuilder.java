@@ -203,9 +203,7 @@
  */
 package com.thesoftwarefactory.vertx.web.bind;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.IDN;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
@@ -310,7 +308,6 @@ public class UriBuilder {
 	private final static Encoder DEFAULT_ENCODER = new UrlEncoder(Charset.forName("UTF-8"));
 	private final static String PARAMETER_NAME_VALUE_SEPARATOR = "=";
 	private final static String PARAMETER_SEPARATOR = "&";
-	private final static String SEGMENT_SEPARATOR = "/";
 	private final static String USER_INFO_SUFFIX = "@";
 	private final static String PORT_PREFIX = ":";
 
@@ -564,46 +561,11 @@ public class UriBuilder {
 
 	@Override
 	public String toString() {
-	    final StringBuilder sb = new StringBuilder();
-	    try {
-	        this.toString(sb);
-	    } catch (final IOException ex) {
-	        // can be safely ignored
-	    }
-	    return sb.toString();
-	}
-	
-	private void toString(final Appendable out) throws IOException {
-		// scheme
-	    if (this.scheme != null) {
-	        out.append(this.scheme);
-	        out.append(':');
-	    }
-	    // authority
-	    // hostname
-	    if (this.host != null) {
-	        out.append(UriBuilder.SEGMENT_SEPARATOR);
-	        out.append(UriBuilder.SEGMENT_SEPARATOR);
-		    // userInfo
-	        if (this.userInfo != null) {
-	            out.append(this.userInfo);
-	            out.append('@');
-	        }
-	        out.append(IDN.toASCII(this.host));
-		    // port
-		    if (this.port>=0) {
-		        out.append(':');
-		        out.append(Integer.toString(this.port));
-		    }
-	    }
-	    // path
-	    if (this.path!=null) {
-	    	out.append(path);
-	    }
+	    final StringBuilder queryBuilder = new StringBuilder();
 		// query
 	    if (this.parameters!=null) {
 			boolean isFirstParameter = true;
-	        out.append('?');
+			queryBuilder.append('?');
 	        for (String parameterName: parameters.keySet()) {
 	        	if (!Is.isEmpty(parameterName)) {
 	        		String encodedParameterName = encoder.encode(parameterName);
@@ -611,25 +573,27 @@ public class UriBuilder {
 		            for (String parameterValue : parameterValues) {			            	
 		        		// output the parameter separator if applicable
 		            	if (!isFirstParameter) {
-		            		out.append(UriBuilder.PARAMETER_SEPARATOR);
+		            		queryBuilder.append(UriBuilder.PARAMETER_SEPARATOR);
 		            	}
-		        		out.append(encodedParameterName);
-		        		out.append(UriBuilder.PARAMETER_NAME_VALUE_SEPARATOR);
+		            	queryBuilder.append(encodedParameterName);
+		            	queryBuilder.append(UriBuilder.PARAMETER_NAME_VALUE_SEPARATOR);
 
 		            	String encodedParameterValue = parameterValue!=null ? encoder.encode(parameterValue) : null;
 		            	if (!Is.isEmpty(encodedParameterValue)) {
-		                    out.append(encodedParameterValue);
+		            		queryBuilder.append(encodedParameterValue);
 		                }
 		            	isFirstParameter = false;
 		            }
 	        	}
 	        }
 	    }
-        // fragment
-        if (this.fragment != null) {
-	        out.append('#');
-	        out.append(this.fragment);
+	    String query = queryBuilder.length()>0 ? queryBuilder.toString() : null;
+	    try {
+	    	return new URI(this.getScheme(), getUserInfo(), getHost(), getPort(), getPath(), query, getFragment()).toASCIIString();
+	    } catch (Exception ex) {
+	        // can be safely ignored
 	    }
+	    return null;
 	}
 
 }
