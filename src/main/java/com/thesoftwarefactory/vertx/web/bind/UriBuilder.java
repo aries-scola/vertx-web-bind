@@ -565,7 +565,6 @@ public class UriBuilder {
 		// query
 	    if (this.parameters!=null) {
 			boolean isFirstParameter = true;
-			queryBuilder.append('?');
 	        for (String parameterName: parameters.keySet()) {
 	        	if (!Is.isEmpty(parameterName)) {
 	        		String encodedParameterName = encoder.encode(parameterName);
@@ -589,7 +588,7 @@ public class UriBuilder {
 	    }
 	    String query = queryBuilder.length()>0 ? queryBuilder.toString() : null;
 	    try {
-	    	return new URI(this.getScheme(), getUserInfo(), getHost(), getPort(), getPath(), query, getFragment()).toASCIIString();
+	    	return new URI(this.getScheme(), getUserInfo(), getHost(), getPort(), getPath(), query, getFragment()).toString();
 	    } catch (Exception ex) {
 	        // can be safely ignored
 	    }
