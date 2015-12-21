@@ -351,7 +351,7 @@ public class BindersImpl implements Binders {
 			return newBinder(cls, type);
 		}
 		catch (Throwable t) {
-			logger.log(Level.WARNING, "Could not instantiate binder class " + className, t);
+			logger.log(Level.WARNING, "Could not instantiate binder class " + className);
 		}
 		return null;
 	}
