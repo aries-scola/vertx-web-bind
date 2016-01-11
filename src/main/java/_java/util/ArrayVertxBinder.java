@@ -269,7 +269,7 @@ public class ArrayVertxBinder<T> extends BaseBinder<T[]> {
 			for (T value: values) {
 				tmpBindingInfo.name(bindingInfo.name() + '[' + i + ']');
 				tmpBindingInfo.index(i++);
-				itemBinder.bindToUrl(tmpBindingInfo, value, builder);
+				itemBinder().bindToUrl(tmpBindingInfo, value, builder);
 			}
 		}
 	}

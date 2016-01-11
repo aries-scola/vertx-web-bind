@@ -221,7 +221,7 @@ import io.vertx.ext.web.RoutingContext;
 
 public class PrimitiveArrayBinder<T> extends BaseBinder<T> {
 
-	private Binder<? super Object> itemBinder;
+	private Binder<T> itemBinder;
 	private Type type;
 	private Class<?> componentType;
 	
@@ -261,6 +261,7 @@ public class PrimitiveArrayBinder<T> extends BaseBinder<T> {
 	/* (non-Javadoc)
 	 * @see com.thesoftwarefactory.vertx.binders.impl.BaseBinder#bindToUrl(com.thesoftwarefactory.vertx.binders.BindingInfo, java.lang.Object, com.thesoftwarefactory.common.lang.UrlBuilder)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public void bindToUrl(BindingInfo bindingInfo, T values, UriBuilder builder) {
 		if (values!=null && values.getClass().isArray()) {
@@ -270,12 +271,12 @@ public class PrimitiveArrayBinder<T> extends BaseBinder<T> {
 			for (Object value: tmpValues) {
 				tmpBindingInfo.name(bindingInfo.name() + '[' + i + ']');
 				tmpBindingInfo.index(i++);
-				itemBinder.bindToUrl(tmpBindingInfo, value, builder);
+				itemBinder().bindToUrl(tmpBindingInfo, (T) value, builder);
 			}
 		}
 	}
 	
-	private synchronized Binder<?> itemBinder() {
+	private synchronized Binder<T> itemBinder() {
 		if (itemBinder==null) {
 			Type parameterType = Types.getParameterTypes(type)[0];
 			itemBinder = Binders.instance.getBinderByType(parameterType);
