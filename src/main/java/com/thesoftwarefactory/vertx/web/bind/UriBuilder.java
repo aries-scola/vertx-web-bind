@@ -340,8 +340,8 @@ public class UriBuilder {
 		this.setUserInfo(uri.getUserInfo());
 		this.setHost(uri.getHost());
 		this.setPort(uri.getPort());
-		this.setPath(uri.getPath());
-		this.setQuery(uri.getQuery());
+		this.setPath(uri.getRawPath());
+		this.setQuery(uri.getRawQuery());
 	}
 
 	/**
@@ -588,7 +588,10 @@ public class UriBuilder {
 	    }
 	    String query = queryBuilder.length()>0 ? queryBuilder.toString() : null;
 	    try {
-	    	return new URI(this.getScheme(), getUserInfo(), getHost(), getPort(), getPath(), query, getFragment()).toString();
+	    	return new URI(this.getScheme(), getUserInfo(), getHost(), getPort(), getPath(), query, getFragment())
+	    			.toString()
+	    			.replace("%25", "%")
+	    			;
 	    } catch (Exception ex) {
 	        // can be safely ignored
 	    }
