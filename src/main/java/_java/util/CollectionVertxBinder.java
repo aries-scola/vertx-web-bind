@@ -259,7 +259,8 @@ public class CollectionVertxBinder<T> extends BaseBinder<Collection<T>> {
 		for (T value: values) {
 			tmpBindingInfo.name(bindingInfo.name() + '[' + i + ']');
 			tmpBindingInfo.index(i++);
-			itemBinder().bindToUrl(tmpBindingInfo, value, builder);
+			// FIXME : fix this ominous hack
+//			itemBinder.bindToUrl(tmpBindingInfo, value, builder);
 		}
 	}
 	
